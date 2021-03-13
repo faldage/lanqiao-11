@@ -1,9 +1,10 @@
 #include "var.h"
 
-volatile int SysTick = 0;
+volatile unsigned long SysTick = 0;
+long lastSys;
 
 u8 digital_tube[8] = {OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF};
-u8 tab[] = {0xC0,0xF9,0xA4,0xB0,0x99,0x92,0x82,0xF8,0x80,0x90,0xff, 0xC0, 0x8c, 0x86, 0xc8, 0xbf, 0xc9};
+u8 tab[] = {0xC0,0xF9,0xA4,0xB0,0x99,0x92,0x82,0xF8,0x80,0x90,0xff, 0xC0, 0x8c, 0x86, 0xc8, 0xbf, 0xc6};
 /////////////0	1			2			3			4		5			6		7		8			9		off			o		p			e			n			-			c
 
 u8 in_password[6] = {OFF, OFF, OFF, OFF, OFF, OFF};
@@ -15,6 +16,8 @@ enum states show_state = INITIAL;
 u8 time_hour;
 u8 time_min;
 u8 time_seconds;
+
+u8 time = 0;
 
 void Timer0Init(void)
 {
@@ -40,8 +43,13 @@ u8 index = 0;
 
 void func() interrupt 1
 {
+	long temp = SysTick - lastSys;
+	temp /= 100;
 	SysTick++;
 	LatchControl(6, 1<<(7 - index));
+	
+	LatchControl(7, tab[digital_tube[index]]);
+	
 	/*
 	switch(index){
 		case 0:
@@ -71,7 +79,7 @@ void func() interrupt 1
 		
 	}
 	*/
-	LatchControl(7, tab[digital_tube[index]]);
+	
 	
 	
 	index = (index + 1) % 8;
@@ -79,12 +87,19 @@ void func() interrupt 1
 
 u8 time_is_up()
 {
+	/*
 	if(time_hour != 0 || time_min != 0){
 		return 1;
 	}
 	if(time_seconds >= 5){
 		return 1;
 	}
+	return 0;
+	*/
+	if(SysTick - lastSys >= 5000){
+		return 1;
+	}
+	
 	return 0;
 }
 
@@ -117,9 +132,10 @@ u8 check_password()
 
 void time_init()
 {
-	Ds1302_Single_Byte_Write(0x80, 0);
-	Ds1302_Single_Byte_Write(0x82, 0);
-	Ds1302_Single_Byte_Write(0x84, 0);
+	//Ds1302_Single_Byte_Write(0x80, 0);
+	//Ds1302_Single_Byte_Write(0x82, 0);
+	//Ds1302_Single_Byte_Write(0x84, 0);
+	lastSys = SysTick;
 }
 
 void change_state()
@@ -163,15 +179,19 @@ void main()
 	//write initial password
 	while(1){
 		
-		int tickBkp = SysTick;
+		unsigned long tickBkp = SysTick;
 		
 		if(tickBkp % 50 == 0){
+			EA = 0;
 			ds1302_brust_read();
+			EA = 1;
 		}
 		
 		if(tickBkp % 10 == 0){
+			EA = 0;
 			change_state();
 			change_show();
+			EA = 1;
 		}
 		
 		while(tickBkp == SysTick);

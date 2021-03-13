@@ -33,8 +33,8 @@ void change_show()
 		digital_tube[0] = N;
 	} else if(show_state == CHANGE_PASSWORD){
 		LatchControl(4, 0x7f);
-		digital_tube[7] = aaa;
-		digital_tube[6] = C;
+		digital_tube[7] = C;
+		digital_tube[6] = OFF;
 		for(i = 0; i <6; i++){
 			digital_tube[i] = in_password[i];
 		}
