@@ -10,7 +10,8 @@ u8 tab[] = {0xC0,0xF9,0xA4,0xB0,0x99,0x92,0x82,0xF8,0x80,0x90,0xff, 0xC0, 0x8c, 
 u8 in_password[6] = {OFF, OFF, OFF, OFF, OFF, OFF};
 u8 password[6] = {8, 8, 8, 8, 8, 8};
 
-u8 door_state = CLOSE;
+u8 check_eeprom_sum;
+
 enum states show_state = INITIAL;
 
 u8 time_hour;
@@ -103,19 +104,55 @@ u8 time_is_up()
 	return 0;
 }
 
+
+void operate_delay(unsigned char t)
+{
+	unsigned char i;
+	
+	while(t--){
+		for(i=0; i<112; i++);
+	}
+}
 void read_password()
 {
-//eeprom
+//read eeprom
+	u8 temp, i;
+	for(i = 0; i < 6; i++){
+		IIC_Start();
+		IIC_SendByte(0x90);
+		IIC_WaitAck();
+		IIC_SendByte(0x00 + i);
+		IIC_WaitAck();
+		IIC_Start();
+		IIC_SendByte(0x91);
+		IIC_WaitAck();
+		temp = IIC_RecByte();
+		IIC_Ack(0);
+		IIC_Stop();
+		
+		password[i] = temp;
+		operate_delay(10);
+	}
 	
 }
 
 void write_password()
 {
-//eeprom
+//write eeprom
 	u8 i;
 	for(i = 0; i < 6; i++){
 		password[i] = in_password[i];
+		IIC_Start();
+		IIC_SendByte(0x90);
+		IIC_WaitAck();
+		IIC_SendByte(0x00+i);
+		IIC_WaitAck();
+		IIC_SendByte(password[i]);
+		IIC_WaitAck();
+		IIC_Stop();
+		operate_delay(10);
 	}
+	
 }
 
 u8 check_password()
@@ -166,8 +203,41 @@ void change_state()
 	respond_to_button();
 }
 
+void read_check_eeprom()
+{
+	IIC_Start();
+	IIC_SendByte(0x90);
+	IIC_WaitAck();
+	IIC_SednByte(0x00);
+	IIC_WaitAck();
+	IIC_Start();
+	IIC_SendByte(0x91);
+	IIC_WaitAck();
+	check_eeprom_sum = IIC_RecByte();
+	IIC_Ack(0);
+	IIC_Stop();
+}
+
 void main()
 {
+	read_check_eeprom();
+	if(check_eeprom_sum == 0){
+		for(i = 0; i < 6; i++){
+			IIC_Start();
+			IIC_SendByte(0x90);
+			IIC_WaitAck();
+			IIC_SendByte(0x00+i);
+			IIC_WaitAck();
+			IIC_SendByte(password[i]);
+			IIC_WaitAck();
+			IIC_Stop();
+			operate_delay(10);
+		}
+	} else {
+		read_password();
+	}
+	
+	
 	// x101 1111
 	LatchControl(5, 0x1f);
 	LatchControl(4, 0xff);

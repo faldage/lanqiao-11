@@ -4,6 +4,7 @@
 #include <STC/STC15F2K60S2.H>
 #include "intrins.h"
 #include "ds1302.h"
+#include "iic.h"
 
 typedef unsigned char u8;
 #define OFF 10
@@ -14,13 +15,10 @@ typedef unsigned char u8;
 #define aaa 15
 #define C 16
 
-#define OPEN 1
-#define CLOSE 0
 
 
 //main
 extern u8 digital_tube[8];
-extern u8 door_state;
 
 extern u8 in_password[6];
 extern u8 password[6];
