@@ -27,6 +27,8 @@ extern u8 password[6];
 void ds1302_brust_read();
 void LatchControl(u8 num ,u8 value);
 
+extern u8 check_eeprom_sum;
+
 //button
 void check_button();
 void respond_to_button();

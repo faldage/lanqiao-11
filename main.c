@@ -119,12 +119,12 @@ void read_password()
 	u8 temp, i;
 	for(i = 0; i < 6; i++){
 		IIC_Start();
-		IIC_SendByte(0x90);
+		IIC_SendByte(0xa0);
 		IIC_WaitAck();
-		IIC_SendByte(0x00 + i);
+		IIC_SendByte(0x00 + i + 1);
 		IIC_WaitAck();
 		IIC_Start();
-		IIC_SendByte(0x91);
+		IIC_SendByte(0xa1);
 		IIC_WaitAck();
 		temp = IIC_RecByte();
 		IIC_Ack(0);
@@ -143,9 +143,9 @@ void write_password()
 	for(i = 0; i < 6; i++){
 		password[i] = in_password[i];
 		IIC_Start();
-		IIC_SendByte(0x90);
+		IIC_SendByte(0xa0);
 		IIC_WaitAck();
-		IIC_SendByte(0x00+i);
+		IIC_SendByte(0x00 + i + 1);
 		IIC_WaitAck();
 		IIC_SendByte(password[i]);
 		IIC_WaitAck();
@@ -206,27 +206,41 @@ void change_state()
 void read_check_eeprom()
 {
 	IIC_Start();
-	IIC_SendByte(0x90);
+	IIC_SendByte(0xa0);
 	IIC_WaitAck();
-	IIC_SednByte(0x00);
+	IIC_SendByte(0x00);
 	IIC_WaitAck();
 	IIC_Start();
-	IIC_SendByte(0x91);
+	IIC_SendByte(0xa1);
 	IIC_WaitAck();
 	check_eeprom_sum = IIC_RecByte();
 	IIC_Ack(0);
 	IIC_Stop();
 }
 
+void write_check_eeprom()
+{
+	IIC_Start();
+		IIC_SendByte(0xa0);
+		IIC_WaitAck();
+		IIC_SendByte(0x00);
+		IIC_WaitAck();
+		IIC_SendByte(check_eeprom_sum + 1);
+		IIC_WaitAck();
+		IIC_Stop();
+		operate_delay(10);
+}
+
 void main()
 {
+	u8 i;
 	read_check_eeprom();
 	if(check_eeprom_sum == 0){
 		for(i = 0; i < 6; i++){
 			IIC_Start();
-			IIC_SendByte(0x90);
+			IIC_SendByte(0xa0);
 			IIC_WaitAck();
-			IIC_SendByte(0x00+i);
+			IIC_SendByte(0x00 + i + 1);
 			IIC_WaitAck();
 			IIC_SendByte(password[i]);
 			IIC_WaitAck();
@@ -236,6 +250,7 @@ void main()
 	} else {
 		read_password();
 	}
+	write_check_eeprom();
 	
 	
 	// x101 1111
